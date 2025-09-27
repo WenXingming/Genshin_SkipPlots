@@ -50,10 +50,18 @@ class GameSkipScript:
             self.should_exit = True
             # 按下 f12 程序无法退出：问题在于 keyboard.wait() 会阻塞主线程，导致 exit() 无法立即生效。 需要修改退出机制。
             # exit()
+
+            # 弹出提示框，放在设置退出标志后面
+            pyautogui.alert("程序即将退出", "提示")
         elif event.name == "f9":  # 暂停/继续
             self.is_running = not self.is_running
             status = "继续运行" if self.is_running else "暂停"
             print(f"程序已{status}")
+
+            # 弹出提示框，放在状态改变后面
+            if(not self.is_running):
+                pyautogui.alert("程序已暂停，按F9继续", "提示") # 暂停时弹出提示框，继续时不弹出
+            
 
     def _calculate_relative_position(self):
         """计算相对坐标位置"""
