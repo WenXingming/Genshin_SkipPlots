@@ -60,6 +60,8 @@ class GameSkipScript:
             # exit()
         elif event.name == "f11":  # 暂停/继续
             self.is_running = not self.is_running
+            self.start_storyline_key = False
+            self.start_movement_key = False
 
             status = "继续运行" if self.is_running else "暂停"
             print(f"程序已{status}")
@@ -71,7 +73,7 @@ class GameSkipScript:
             status = "开启" if self.start_storyline_key else "关闭"
             print(f"剧情按键已{status}")
             if not self.start_storyline_key:
-                pyautogui.alert(f"剧情按键已{status}", "提示")
+                pyautogui.alert(f"剧情按键已{status}。按 F10 可重新开启", "提示")
         elif event.name == "f9":
             self.start_movement_key = not self.start_movement_key
 
