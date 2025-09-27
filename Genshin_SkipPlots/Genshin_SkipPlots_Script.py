@@ -77,8 +77,8 @@ class GameSkipScript:
 
             status = "开启" if self.start_movement_key else "关闭"
             print(f"行走按键已{status}")
-            if not self.start_movement_key:
-                pyautogui.alert(f"行走按键已{status}", "提示")
+            # if not self.start_movement_key: # 别弹出提示框，这个功能比较频繁用到
+            #     pyautogui.alert(f"行走按键已{status}", "提示")
 
     def _calculate_relative_position(self):
         """计算相对坐标位置"""
@@ -99,6 +99,7 @@ class GameSkipScript:
         absolute_x, absolute_y = self._calculate_absolute_position()
         print(f"点击坐标: ({absolute_x:.0f}, {absolute_y:.0f})")
 
+        is_movement_pressed = False
         while True:
             if self.is_running:
                 # pyautogui.click(x=absolute_x, y=absolute_y, button="left")
@@ -106,8 +107,12 @@ class GameSkipScript:
                     keyboard.press_and_release(self.storyline_key)  # 改为按 下 'f' 键
                 if self.start_movement_key:
                     keyboard.press(self.movement_key)  # 持续按 'w' 键
+                    is_movement_pressed = True
             time.sleep(self.click_interval)
-            keyboard.release(self.movement_key)  # 松开 'w' 键
+            
+            if is_movement_pressed:  # 松开 'w' 键
+                keyboard.release(self.movement_key)
+                is_movement_pressed = False
 
     def _show_warning(self):
         """显示警告信息"""
