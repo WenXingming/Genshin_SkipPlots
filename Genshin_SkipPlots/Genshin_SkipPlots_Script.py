@@ -60,7 +60,7 @@ class GameSkipScript:
 
             # 弹出提示框，放在状态改变后面
             if(not self.is_running):
-                pyautogui.alert("程序已暂停，按F9继续", "提示") # 暂停时弹出提示框，继续时不弹出
+                pyautogui.alert("程序已暂停，请先关闭此弹窗。按 F9 可继续", "提示") # 暂停时弹出提示框，继续时不弹出
             
 
     def _calculate_relative_position(self):
