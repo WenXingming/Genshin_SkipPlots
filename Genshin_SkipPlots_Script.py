@@ -189,7 +189,7 @@ def main():
     game_type = "zzz"  # 修改这里切换游戏
 
     # 创建并启动脚本
-    click_interval = 1  # 点击间隔时间(秒)
+    click_interval = 0.2  # 点击间隔时间(秒)
     countdown_seconds = 3  # 倒计时秒数
     script = GameSkipScript(
         click_position=game_positions.get(game_type, game_positions["default"]),
