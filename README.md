@@ -11,14 +11,14 @@
 
 ## Installation
 
-1. **Step 1: Clone the Repository**
+1. **Step 1: Clone the Repository**.
 
    ```bash
    git clone https://github.com/WenXingming/Genshin_SkipPlots.git
    cd Genshin_SkipPlots
    ```
 
-2. **Step 2: Install Required Packages**
+2. **Step 2: Install Required Packages**. 
    You can use python directly, or create a conda virtual environment with python 3.8+. Then install the required packages using pip:
 
    ```bash
@@ -31,7 +31,7 @@
 
 ## Usage
 
-Run the script using Python (if unused, you may run it with administrator privileges):
+Run the script using Python (**if unused, you may run it with administrator privileges**):
 
 ```bash
 # conda activate genshin_skip_plots
