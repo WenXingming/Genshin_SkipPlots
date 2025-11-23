@@ -31,7 +31,7 @@
 
 ## Usage
 
-Run the script using Python (**if unused, you may run it with administrator privileges**):
+Run the script using Python (**If it has not taken effect, you can run it with administrator privileges.**):
 
 ```bash
 # conda activate genshin_skip_plots
