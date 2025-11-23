@@ -31,7 +31,7 @@
 
 ## Usage
 
-Run the script using Python (**If it has not taken effect, you can run it with administrator privileges**):
+Run the script using Python ( **If it has not taken effect, you can run it with administrator privileges** ) :
 
 ```bash
 # conda activate genshin_skip_plots
@@ -40,7 +40,7 @@ python SkipPlots_Script.py
 
 ## Reference architecture diagram
 
-解耦合：监听线程和点击线程通过共享状态标志进行通信，避免了直接依赖，提高了代码的可维护性和扩展性，同时编程时也更好 Debug。
+**解耦合**：监听线程和点击线程通过共享状态标志进行通信，避免了直接依赖，提高了代码的可维护性和扩展性，同时编程时也更好 Debug。
 
 函数调用流程图（DeepSeek 生成）：
 
@@ -100,6 +100,25 @@ flowchart TD
 
 ```mermaid
 classDiagram
+    class MainThread {
+        +main()
+        +start()
+        +Wait for Exit Event
+    }
+
+    class ListenerThread {
+        +_listener_loop()
+        +keyboard.add_hotkey()
+        +Wait for Exit Event
+    }
+
+    class ClickThread {
+        +_click_loop()
+        +Check is_running
+        +Check start_storyline_key
+        +Check start_movement_key
+    }
+
     class GameSkipScript {
         -click_position : tuple
         -click_interval : float
@@ -123,33 +142,14 @@ classDiagram
         +_click_movement_key_thread()
         +start()
     }
-
-    class MainThread {
-        +main()
-        +start()
-        +Wait for Exit Event
-    }
-
-    class ListenerThread {
-        +_listener_loop()
-        +keyboard.add_hotkey()
-        +Wait for Exit Event
-    }
-
-    class ClickThread {
-        +_click_loop()
-        +Check is_running
-        +Check start_storyline_key
-        +Check start_movement_key
-    }
-
-    MainThread --> GameSkipScript : Instantiates
+    
     MainThread --> ListenerThread : Spawns (Daemon)
+    MainThread --> GameSkipScript : Instantiates
     MainThread --> ClickThread : Spawns (Daemon)
-
+    
     ListenerThread ..> GameSkipScript : Modifies State (via Hotkeys)
     ClickThread ..> GameSkipScript : Reads State
-
+    
     note for ListenerThread "Listens for F9, F10, F11, F12\nUpdates flags safely using state_lock"
     note for ClickThread "Loop while not exit_event\nExecutes actions based on flags"
 ```
