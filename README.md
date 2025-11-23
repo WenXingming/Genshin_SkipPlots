@@ -40,6 +40,8 @@ python SkipPlots_Script.py
 
 ## Reference architecture diagram
 
+解耦合：监听线程和点击线程通过共享状态标志进行通信，避免了直接依赖，提高了代码的可维护性和扩展性，同时编程时也更好 Debug。
+
 函数调用流程图（DeepSeek 生成）：
 
 ```mermaid
