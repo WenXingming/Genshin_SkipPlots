@@ -53,6 +53,7 @@ class GameSkipScript:
         self.is_running = True
         self.start_storyline_key = False
         self.start_movement_key = False
+        self.movement_key_pressed = False  # 行走键是否被按下的状态
 
         # 创建条件变量，用于线程退出通知（监听线程、点击线程、主线程的阻塞退出）
         self.listener_thread_exit_event = threading.Event()
@@ -144,6 +145,7 @@ class GameSkipScript:
         """发送行走按键，需要保持按下状态。"""
         try:
             keyboard.press(self.movement_key)
+            self.movement_key_pressed = True
         except Exception as e:
             print(f"发送行走按键出错: {e}")
 
@@ -151,6 +153,7 @@ class GameSkipScript:
         """释放行走按键"""
         try:
             keyboard.release(self.movement_key)
+            self.movement_key_pressed = False
         except Exception as e:
             print(f"释放行走按键出错: {e}")
 
@@ -167,7 +170,8 @@ class GameSkipScript:
             if self.start_movement_key:
                 self._click_movement_key()
             else:
-                self._unclick_movement_key()
+                if self.movement_key_pressed:  # 如果行走键之前被按下但现在不需要行走了，则释放。不加判断标志会导致重复释放按键，影响游戏
+                    self._unclick_movement_key()
             time.sleep(self.click_interval)  # 短暂休眠，避免 CPU 占用过高
 
             # xxx or (not self.start_storyline_key and not self.start_movement_key) 不可以放前面。当取消行走时，仍需触发后续释放按键逻辑避免 w 键未被释放
