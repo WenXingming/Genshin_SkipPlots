@@ -54,9 +54,10 @@ class GameSkipScript:
         self.start_storyline_key = False
         self.start_movement_key = False
 
-        # 创建条件变量，用于线程间退出通知
+        # 创建条件变量，用于线程退出通知（监听线程、点击线程、主线程的阻塞退出）
         self.listener_thread_exit_event = threading.Event()
         self.click_thread_exit_event = threading.Event()
+        self.exit_event = threading.Event()
         
         # 屏幕尺寸（用于计算绝对坐标）
         self.screen_width, self.screen_height = pyautogui.size()
@@ -83,20 +84,24 @@ class GameSkipScript:
         with self.state_lock:
             self.listener_thread_exit_event.set()
             self.click_thread_exit_event.set()
+            self.exit_event.set()
         print("收到退出指令，准备退出...")
         pyautogui.alert("程序即将退出", "提示")
 
     def _handle_pause_toggle(self):
         """处理暂停/继续按键 (F11)"""
         with self.state_lock:
-            if(self.is_running):
-                self.is_running = False
-                self.previous_state = (self.start_storyline_key, self.start_movement_key)
-                self.start_storyline_key = False
-                self.start_movement_key = False
-            else:
-                self.is_running = True
-                self.start_storyline_key, self.start_movement_key = self.previous_state
+            # if(self.is_running):
+            #     self.is_running = False
+            #     self.previous_state = (self.start_storyline_key, self.start_movement_key)
+            #     self.start_storyline_key = False
+            #     self.start_movement_key = False
+            # else:
+            #     self.is_running = True
+            #     self.start_storyline_key, self.start_movement_key = self.previous_state
+            self.is_running = not self.is_running
+            self.start_storyline_key = False
+            self.start_movement_key = False
         state = "继续" if self.is_running else "暂停"
         print(f"程序已{state}")
         if not self.is_running:
@@ -136,38 +141,40 @@ class GameSkipScript:
             print(f"发送剧情按键出错: {e}")
 
     def _click_movement_key(self):
-        """发送行走按键，需要保持按下状态。这是一个耗时操作，为了避免阻塞原线程，单独开启一个线程执行（但是后面还得 join，还是同步操作...）。"""
-        try:
-            click_movement_key_thread = threading.Thread(target=self._click_movement_key_thread)
-            click_movement_key_thread.start()
-            click_movement_key_thread.join(timeout=1)
-        except Exception as e:
-            print(f"发送行走按键出错: {e}")
-
-    def _click_movement_key_thread(self):
+        """发送行走按键，需要保持按下状态。"""
         try:
             keyboard.press(self.movement_key)
-            time.sleep(self.click_interval)
-            keyboard.release(self.movement_key)
         except Exception as e:
             print(f"发送行走按键出错: {e}")
 
+    def _unclick_movement_key(self):
+        """释放行走按键"""
+        try:
+            keyboard.release(self.movement_key)
+        except Exception as e:
+            print(f"释放行走按键出错: {e}")
+
     def _click_loop(self):
-        """点击循环：扁平化逻辑，使用 exit_event.wait 做超时与退出检测"""
+        """点击循环：扁平化逻辑，使用 click_thread_exit_event.wait 做超时与退出检测"""
         abs_x, abs_y = self._calculate_absolute_position()
         print(f"点击坐标: ({abs_x}, {abs_y})")
+
         # 只访问状态标志，不修改，无需持有锁（也避免了一直循环持有锁导致死锁）
-        while not self.listener_thread_exit_event.is_set():
-            if not self.is_running:
-                wait_time = 1 # 避免频繁轮询
-                time.sleep(wait_time)
-                continue
+        while not self.click_thread_exit_event.is_set():
+            # 有一个问题是：两个功能同时开启时，一个功能的等待时间会影响另一个功能的响应速度。该如何解决？下面是一种解决思路：增加一个释放按键的逻辑（这样点击按键的时候就不需要等待 xxx 时间）。
             if self.start_storyline_key:
                 self._click_storyline_key()
             if self.start_movement_key:
-                # self._click_movement_key()
-                self._click_movement_key_thread()
-            time.sleep(self.click_interval)
+                self._click_movement_key()
+            else:
+                self._unclick_movement_key()
+            time.sleep(self.click_interval)  # 短暂休眠，避免 CPU 占用过高
+
+            # xxx or (not self.start_storyline_key and not self.start_movement_key) 不可以放前面。当取消行走时，仍需触发后续释放按键逻辑避免 w 键未被释放
+            if not self.is_running or (not self.start_storyline_key and not self.start_movement_key):
+                wait_time = 1  # 避免频繁轮询
+                time.sleep(wait_time)
+                continue
 
     # ---------- UI / 启动流程 ----------
     def _show_warning(self):
@@ -207,7 +214,6 @@ class GameSkipScript:
         # 启动点击守护线程
         click_thread = threading.Thread(target=self._click_loop, daemon=True)
         click_thread.start()
-        self._click_loop()
         print("脚本已启动，等待键盘事件（按 F12 退出）...")
         
         # 主线程阻塞等待退出事件，由 listener 或其它源触发
@@ -223,11 +229,10 @@ def main():
         "default": (1500, 740),
     }
 
-    game_type = "zzz"
+    game_type = "genshin"
     click_interval = 0.2
-
     script = GameSkipScript(
-        click_position=game_positions.get(game_type, game_positions["default"]),
+        click_position=game_positions.get(game_type, game_positions[game_type]),
         click_interval=click_interval,
     )
     script.start()
@@ -237,12 +242,10 @@ if __name__ == "__main__":
     # Windows 管理员检测（可选）
     try:
         import ctypes
-
         if ctypes.windll.shell32.IsUserAnAdmin():
             print("以管理员权限运行")
         else:
             print("建议以管理员权限运行以保证 keyboard 功能可用")
     except Exception:
         print("无法检测管理员权限")
-
     main()
